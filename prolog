@@ -1,371 +1,616 @@
-[23bcs101@mepcolinux ex6]$cat arithmetic.pl
-% ============================================================
-% Prolog Program: Combination of Simple Arithmetic & Set Theory
-% ============================================================
+% Menu-Driven Arithmetic Operations in Prolog
 
-% -----------------------------------------------------------
-% ARITHMETIC OPERATIONS (1–4)
-% -----------------------------------------------------------
-
-% 1. Addition
-add(X, Y, Result) :-
-    number(X),
-    number(Y),
-    Result is X + Y.
-
-% 2. Subtraction
-subract(X, Y, Result) :-
-    number(X),
-    number(Y),
-    Result is X - Y.
-
-% 3. Multiplication
-multiply(X, Y, Result) :-
-    number(X),
-    number(Y),
-    Result is X * Y.
-
-% 4. Integer Division (with zero-check)
-divide(_, 0, _) :-
-    write('Error: Division by zero'), nl, fail.
-divide(X, Y, Result) :-
-    number(X),
-    number(Y),
+% Arithmetic Operations
+add(X, Y, R) :- R is X + Y.
+subtract(X, Y, R) :- R is X - Y.
+multiply(X, Y, R) :- R is X * Y.
+divide(X, Y, R) :-
     Y =\= 0,
-    Result is X / Y.
+    R is X / Y.
+modulus(X, Y, R) :-
+    Y =\= 0,
+    R is X mod Y.
+power(X, Y, R) :- R is X ** Y.
 
-% -----------------------------------------------------------
-% SET THEORY OPERATIONS (5–8)
-% -----------------------------------------------------------
-
-% 5. Union of two sets (A ∪ B)
-%    Combines both sets, removing duplicates.
-set_union([], B, B).
-set_union([H|T], B, Union) :-
-    member(H, B), !,
-    set_union(T, B, Union).
-set_union([H|T], B, [H|Union]) :-
-    set_union(T, B, Union).
-
-% 6. Intersection of two sets (A ∩ B)
-%    Elements common to both sets.
-set_intersection([], _, []).
-set_intersection([H|T], B, [H|Intersection]) :-
-    member(H, B), !,
-    set_intersection(T, B, Intersection).
-set_intersection([_|T], B, Intersection) :-
-    set_intersection(T, B, Intersection).
-
-% 7. Difference of two sets (A \ B)
-%    Elements in A but not in B.
-set_difference([], _, []).
-set_difference([H|T], B, Difference) :-
-    member(H, B), !,
-    set_difference(T, B, Difference).
-set_difference([H|T], B, [H|Difference]) :-
-    set_difference(T, B, Difference).
-
-% 8. Subset check (A ⊆ B)
-%    True if every element of A is in B.
-set_subset([], _).
-set_subset([H|T], B) :-
-    member(H, B),
-    set_subset(T, B).
-
-% -----------------------------------------------------------
-% COMBINED OPERATIONS (Arithmetic on Set Results)
-% -----------------------------------------------------------
-
-% Sum all elements of a set
-set_sum([], 0).
-set_sum([H|T], Sum) :-
-    number(H),
-    set_sum(T, RestSum),
-    Sum is H + RestSum.
-
-% Compute the size (cardinality) of a set
-set_size([], 0).
-set_size([_|T], Size) :-
-    set_size(T, RestSize),
-    Size is RestSize + 1.
-
-
-==============================================================
-OUTPUT
-==============================================================
-?- consult('arithmetic.pl').
-true.
-
-?- add(7,3,R).
-R = 10.
-
-?- subract(7,3,R).
-R = 4.
-
-?- multiply(4,3,R).
-R = 12.
-
-?- divide(8,2,R).
-R = 4.
-
-?- divide(8,0,R).
-Error: Division by zero
-false.
-
-[23bcs101@mepcolinux ex6]$cat pizza_hut.pl
-:- dynamic menu_item/2.
-
-% ----------- Initial menu -----------
-menu_item('Margherita', 300).
-menu_item('Pepperoni', 400).
-menu_item('Veggie', 350).
-menu_item('BBQ Chicken', 450).
-menu_item('Farmhouse', 420).
-menu_item('Paneer Tikka', 430).
-menu_item('Cheese Burst', 480).
-menu_item('Garlic Bread', 160).
-menu_item('Cheesy Dip', 40).
-menu_item('Coke', 60).
-menu_item('Brownie', 120).
-
-% ----------- Entry point -----------
-order :-
-    nl, writeln('Welcome to Pizza Hut!'),
-    show_menu,
-    nl, writeln('Start ordering. (Type "done" to finish).'),
-    order_items([], RawOrder),
-    merge_order(RawOrder, Order), % Combine duplicate items
-    display_bill(Order).
-
-% ----------- Show menu -----------
+% Menu Display
 show_menu :-
-    nl, writeln('-------- MENU --------'),
-    format('~w~t~25|~w~n', ['Item', 'Price']),
-    writeln('--------------------------------'),
-    forall(menu_item(Item, Price),
-           format('~w~t~25|~d~n', [Item, Price])),
-    writeln('--------------------------------').
+    nl, write('********** ARITHMETIC MENU **********'), nl,
+    write('1. Addition'), nl,
+    write('2. Subtraction'), nl,
+    write('3. Multiplication'), nl,
+    write('4. Division'), nl,
+    write('5. Modulus'), nl,
+    write('6. Power'), nl,
+    write('7. Exit'), nl,
+    write('Enter your choice (1-7): ').
 
-% ----------- Find item case-insensitively -----------
-find_item(InputStr, RealName, Price) :-
-    string_lower(InputStr, LowerInput),
-    menu_item(RealName, Price),
-    atom_string(RealName, MenuNameStr),
-    string_lower(MenuNameStr, LowerInput),
-    !. % Stop searching once found
+% Start Program
+start :-
+    repeat,
+    show_menu,
+    read(Choice),
+    ( Choice == 7 ->
+        write('Exiting program...'), nl, !
+    ; Choice >= 1, Choice =< 6 ->
+        write('Enter first number: '), read(X),
+        write('Enter second number: '), read(Y),
+        perform_operation(Choice, X, Y),
+        fail
+    ; write('Invalid choice! Please enter a number from 1 to 7.'), nl,
+      fail).
 
-% ----------- Take orders cleanly -----------
-order_items(Current, Final) :-
-    write('Enter item name: '), flush_output,
-    read_line_to_string(user_input, InputStr),
-    normalize_space(string(CleanStr), InputStr),
+% Perform Operation Based on Choice
+perform_operation(1, X, Y) :- add(X, Y, R), format('Result: ~w + ~w = ~w~n', [X, Y, R]).
+perform_operation(2, X, Y) :- subtract(X, Y, R), format('Result: ~w - ~w = ~w~n', [X, Y, R]).
+perform_operation(3, X, Y) :- multiply(X, Y, R), format('Result: ~w * ~w = ~w~n', [X, Y, R]).
+perform_operation(4, X, Y) :-
+    (Y =:= 0 -> write('Error: Division by zero not allowed!'), nl ;
+     divide(X, Y, R), format('Result: ~w / ~w = ~w~n', [X, Y, R])).
+perform_operation(5, X, Y) :-
+    (Y =:= 0 -> write('Error: Modulus by zero not allowed!'), nl ;
+     modulus(X, Y, R), format('Result: ~w mod ~w = ~w~n', [X, Y, R])).
+perform_operation(6, X, Y) :- power(X, Y, R), format('Result: ~w ^ ~w = ~w~n', [X, Y, R]).
+[23bcs098@mepcolinux ex6]$cat 1
 
-    ( string_lower(CleanStr, "done") ->
-        Final = Current
-    ; CleanStr == "" -> % User just pressed Enter by mistake
-        order_items(Current, Final)
-    ; find_item(CleanStr, RealName, Price) ->
-        write('Enter quantity: '), flush_output,
-        read_line_to_string(user_input, QtyStr),
-        ( number_string(Qty, QtyStr) ->
-            append(Current, [order(RealName, Qty, Price)], New),
-            order_items(New, Final)
-        ; writeln('Invalid quantity, try again.'),
-          order_items(Current, Final)
-        )
-    ; % Item not in KB -> Add it
-        format('Item not found. Enter price for "~w": ', [CleanStr]), flush_output,
-        read_line_to_string(user_input, PriceStr),
-        ( number_string(UserPrice, PriceStr) ->
-            atom_string(NewItemAtom, CleanStr),
-            assertz(menu_item(NewItemAtom, UserPrice)),
-            format('Added "~w" to menu.~n', [NewItemAtom]),
-            write('Enter quantity: '), flush_output,
-            read_line_to_string(user_input, QtyStr2),
-            ( number_string(Qty2, QtyStr2) ->
-                append(Current, [order(NewItemAtom, Qty2, UserPrice)], New2),
-                order_items(New2, Final)
-            ; writeln('Invalid quantity, skipping...'),
-              order_items(Current, Final)
-            )
-        ; writeln('Invalid price, try again.'),
-          order_items(Current, Final)
-        )
+?-
+% c:/Users/Administrator/Desktop/arithe.pl compiled 0.00 sec, 14 clauses
+?- start.
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): 1.
+Enter first number: |: 3.
+Enter second number: |: 4.
+Result: 3 + 4 = 7
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): |: 2.
+Enter first number: |: 4.
+Enter second number: |: 5.
+Result: 4 - 5 = -1
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): |: 3.
+Enter first number: |: 45.
+Enter second number: |: 34.
+Result: 45 * 34 = 1530
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): |: 4.
+Enter first number: |: 3.
+Enter second number: |: 4.
+Result: 3 / 4 = 0.75
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): |: 4.
+Enter first number: |: 1.
+Enter second number: |: 0.
+Error: Division by zero not allowed!
+
+********** ARITHMETIC MENU **********
+1. Addition
+2. Subtraction
+3. Multiplication
+4. Division
+5. Modulus
+6. Power
+7. Exit
+Enter your choice (1-7): |:
+[23bcs098@mepcolinux ex6]$ls
+1  2  3  4  ari.pl  domins.pl  ex6.prn  set.pl  test  tree.pl
+[23bcs098@mepcolinux ex6]$cat domins.pl
+% =====================================================
+% DOMINOS BILLING SYSTEM
+% =====================================================
+
+:- dynamic(total/1).
+:- dynamic(order/3).   % order(Item, Quantity, Amount)
+
+total(0).
+
+% ---------------- MENU PRICES ----------------
+price(margherita, 150).
+price(pepperoni, 250).
+price(farmhouse, 220).
+price(veggie_supreme, 200).
+price(chicken_dominator, 300).
+
+% ---------------- MENU ----------------
+menu :-
+    nl, write('********* DOMINOS MENU *********'), nl,
+    write('1. Margherita - Rs 150'), nl,
+    write('2. Pepperoni - Rs 250'), nl,
+    write('3. Farmhouse - Rs 220'), nl,
+    write('4. Veggie Supreme - Rs 200'), nl,
+    write('5. Chicken Dominator - Rs 300'), nl,
+    write('6. Show Total Bill & Exit'), nl,
+    write('Enter your choice (1-6): ').
+
+% ---------------- START ----------------
+start :-
+    retractall(total(_)),
+    assert(total(0)),
+    retractall(order(_,_,_)),
+    billing.
+
+% ---------------- BILLING LOOP ----------------
+billing :-
+    menu,
+    read(Choice),
+    process_choice(Choice).
+
+% ---------------- PROCESS CHOICE ----------------
+process_choice(6) :-
+    nl, write('==============================='), nl,
+    write('        DOMINOS BILL           '), nl,
+    write('==============================='), nl,
+    nl,
+    write('Item\tQty\tRate\tAmount'), nl,
+    write('--------------------------------'), nl,
+    show_items,
+    write('--------------------------------'), nl,
+    total(Total),
+    format('Total Bill Amount: Rs ~w~n', [Total]),
+    write('==============================='), nl,
+    write('Thank you! Visit again!'), nl,
+    nl.
+
+process_choice(Choice) :-
+    (Choice >= 1, Choice =< 5 ->
+        get_item(Choice, Item),
+        format('Enter quantity for ~w: ', [Item]),
+        read(Qty),
+        price(Item, Price),
+        Amount is Price * Qty,
+        retract(total(T)),
+        NewTotal is T + Amount,
+        assert(total(NewTotal)),
+        assert(order(Item, Qty, Amount)),
+        format('Added ~w x ~w for Rs ~w.~n', [Qty, Item, Amount]),
+        billing
+    ;
+        write('Invalid choice! Please enter 1 to 6.'), nl,
+        billing
     ).
 
-% ----------- Merge duplicate items -----------
-merge_order(Raw, Merged) :- merge_order_(Raw, [], Merged).
+% ---------------- ITEM MAPPING ----------------
+get_item(1, margherita).
+get_item(2, pepperoni).
+get_item(3, farmhouse).
+get_item(4, veggie_supreme).
+get_item(5, chicken_dominator).
 
-merge_order_([], Acc, Acc).
-merge_order_([order(Item, Qty, Price)|T], Acc, Out) :-
-    ( select(order(Item, OldQty, Price), Acc, AccRest) ->
-        NewQty is OldQty + Qty,
-        Acc2 = [order(Item, NewQty, Price)|AccRest]
-    ; Acc2 = [order(Item, Qty, Price)|Acc]
-    ),
-    merge_order_(T, Acc2, Out).
+% ---------------- SHOW ITEMS ----------------
+show_items :-
+    order(Item, Qty, Amount),
+    price(Item, Price),
+    format('~w\t~w\t~w\t~w~n', [Item, Qty, Price, Amount]),
+    fail.
+show_items.
+[23bcs098@mepcolinux ex6]$cat 2
+Ā?- start.
 
-% ----------- Display bill -----------
-display_bill(OrderList) :-
-    nl, writeln('-------- BILL --------'),
-    format('~w~t~25|~w~t~35|~w~n', ['Item', 'Qty', 'Subtotal']),
-    writeln('-------------------------------------------'),
-    bill_total(OrderList, 0, GrandTotal),
-    writeln('-------------------------------------------'),
-    format('Grand Total: ~d~n', [GrandTotal]),
-    writeln('Thank you for ordering!').
+********* DOMINOS MENU *********
+1. Margherita - Rs 150
+2. Pepperoni - Rs 250
+3. Farmhouse - Rs 220
+4. Veggie Supreme - Rs 200
+5. Chicken Dominator - Rs 300
+6. Show Total Bill & Exit
+Enter your choice (1-6): 1.
+Enter quantity for margherita: |: 3.
+Added 3 x margherita for Rs 450.
 
-bill_total([], Total, Total).
-bill_total([order(Item, Qty, Price)|T], Acc, Total) :-
-    SubTotal is Qty * Price,
-    format('~w~t~25|~d~t~35|~d~n', [Item, Qty, SubTotal]),
-    Acc2 is Acc + SubTotal,
-    bill_total(T, Acc2, Total).
+********* DOMINOS MENU *********
+1. Margherita - Rs 150
+2. Pepperoni - Rs 250
+3. Farmhouse - Rs 220
+4. Veggie Supreme - Rs 200
+5. Chicken Dominator - Rs 300
+6. Show Total Bill & Exit
+Enter your choice (1-6): |: 2.
+Enter quantity for pepperoni: |: 5.
+Added 5 x pepperoni for Rs 1250.
 
-========================================================================
-OUTPUT
-========================================================================
-?- consult('pizza_hut.pl').
+********* DOMINOS MENU *********
+1. Margherita - Rs 150
+2. Pepperoni - Rs 250
+3. Farmhouse - Rs 220
+4. Veggie Supreme - Rs 200
+5. Chicken Dominator - Rs 300
+6. Show Total Bill & Exit
+Enter your choice (1-6): |: 3.
+Enter quantity for farmhouse: |: 5.
+Added 5 x farmhouse for Rs 1100.
+
+********* DOMINOS MENU *********
+1. Margherita - Rs 150
+2. Pepperoni - Rs 250
+3. Farmhouse - Rs 220
+4. Veggie Supreme - Rs 200
+5. Chicken Dominator - Rs 300
+6. Show Total Bill & Exit
+Enter your choice (1-6): |: 6.
+
+===============================
+        DOMINOS BILL
+===============================
+
+Item    Qty     Rate    Amount
+--------------------------------
+margherita      3       150     450
+pepperoni       5       250     1250
+farmhouse       5       220     1100
+--------------------------------
+Total Bill Amount: Rs 2800
+===============================
+Thank you! Visit again!
+
+[23bcs098@mepcolinux ex6]$cat set.pl
+% A collection of predicates for set operations on lists.
+
+% Membership: Checks if an element is a member of a set (list).
+% Usage: is_member(Element, Set)
+
+is_member(X, [X|_]).
+is_member(X, [_|Tail]) :-
+    is_member(X, Tail).
+% Subset: Checks if the first set is a subset of the second.
+% All elements of Set1 must be members of Set2.
+% Usage: is_subset(Set1, Set2)
+
+is_subset([], _).
+is_subset([Head|Tail], Set2) :-
+    is_member(Head, Set2),
+    is_subset(Tail, Set2).
+
+% Union: The third argument is the union of the first two sets.
+% The resulting set contains all unique elements from both sets.
+% Usage: union_of(Set1, Set2, Union)
+
+union_of([], Set, Set).
+union_of([Head|Tail], Set2, Union) :-
+    is_member(Head, Set2),
+    !,
+    union_of(Tail, Set2, Union).
+union_of([Head|Tail], Set2, [Head|Union]) :-
+    union_of(Tail, Set2, Union).
+
+% Intersection: The third argument is the intersection of the first two.
+% The resulting set contains elements that are in both sets.
+% Usage: intersection_of(Set1, Set2, Intersection)
+
+intersection_of([], _, []).
+intersection_of([Head|Tail], Set2, [Head|Intersection]) :-
+    is_member(Head, Set2),
+    !,
+    intersection_of(Tail, Set2, Intersection).
+intersection_of([_|Tail], Set2, Intersection) :-
+    intersection_of(Tail, Set2, Intersection).
+
+% Difference: The third argument is the difference of Set1 and Set2.
+% The resulting set contains elements of Set1 that are not in Set2.
+% Usage: difference_of(Set1, Set2, Difference)
+
+difference_of([], _, []).
+difference_of([Head|Tail], Set2, Difference) :-
+    is_member(Head, Set2),
+    !,
+    difference_of(Tail, Set2, Difference).
+difference_of([Head|Tail], Set2, [Head|Difference]) :-
+    difference_of(Tail, Set2, Difference).
+
+% Symmetric Difference: The third argument is the symmetric difference
+% of the first two sets (elements in one, but not both).
+% Usage: symmetric_difference_of(Set1, Set2, SymDifference)
+
+symmetric_difference_of(Set1, Set2, Result) :-
+    union_of(Set1, Set2, Union),
+    intersection_of(Set1, Set2, Intersection),
+    difference_of(Union, Intersection, Result).
+% Equality: Checks if two sets are equal.
+% Two sets are equal if they are subsets of each other.
+% Usage: equal_sets(Set1, Set2)
+
+equal_sets(Set1, Set2) :-
+    is_subset(Set1, Set2),
+    is_subset(Set2, Set1).
+[23bcs098@mepcolinux ex6]$cat 3
+% c:/Users/Administrator/Desktop/set.pl compiled 0.00 sec, 15 clauses
+?- start.
+ERROR: Unknown procedure: start/0 (DWIM could not correct goal)
+?- is_member(2, [1, 2, 3]).
+true .
+
+?- is_member(4, [1, 2, 3]).
+false.
+
+?- is_subset([], [1, 2, 3]).
 true.
 
-?- order.
+?- is_subset([1, 5], [1, 2, 3]).
+false.
 
-Welcome to Pizza Hut!
-
--------- MENU --------
-Item                     Price
---------------------------------
-Margherita               300
-Pepperoni                400
-Veggie                   350
-BBQ Chicken              450
-Farmhouse                420
-Paneer Tikka             430
-Cheese Burst             480
-Garlic Bread             160
-Cheesy Dip               40
-Coke                     60
-Brownie                  120
---------------------------------
-
-Start ordering. (Type "done" to finish).
-Enter item name: Veggie
-Enter quantity: 2
-Enter item name: Coke
-Enter quantity: 2
-Enter item name: done
-
--------- BILL --------
-Item                     Qty       Subtotal
--------------------------------------------
-Coke                     2         120
-Veggie                   2         700
--------------------------------------------
-Grand Total: 820
-Thank you for ordering!
+?- union_of([1, 2], [3, 4], [1, 2, 3, 4]).
 true.
+
+?- intersection_of([1, 2, 3], [2, 3, 4], [2, 3]).
+true.
+
+?- difference_of([1, 2, 3], [2, 3, 4], [1]).
+true.
+
+?- equal_sets([1, 2], [1, 2, 3]).
+false.
+
+?- equal_sets([1, 2, 3], [3, 2, 1]).
+true .
+
+?-
+|    symmetric_difference_of([1, 2, 3], [3, 4, 5], [1, 2, 4, 5]).
+true.
+
+?- .
+
+
+
+% =====================================================
+% TRAVANCORE ROYAL FAMILY TREE
+% =====================================================
+% ========================
+% FACTS: parent/gender
+% ========================
 % ---------- Generation 1 ----------
+
+
 parent(attingal_elaya_thampuran, sethu_lakshmi_bayi).
 parent(attingal_elaya_thampuran, sethu_parvathi_bayi).
 parent(attingal_elaya_thampuran, other_sister_1).
-% ---------- Generation 2 ----------
-parent(sethu_parvathi_bayi, chithira_thirunal).
-parent(sethu_parvathi_bayi, uthradom_thirunal).
-parent(sethu_parvathi_bayi, karthika_thirunal).
-% ---------- Generation 3 ----------
-parent(karthika_thirunal, pooyam_thirunal).
-parent(karthika_thirunal, aswathi_thirunal).
-parent(pooyam_thirunal, moolam_thirunal).
-parent(pooyam_thirunal, revathi_thirunal).
-% ---------- Generation 4 ----------
-parent(moolam_thirunal, prince_kerala_varma).
-parent(moolam_thirunal, princess_lakshmi_bayi).
-parent(moolam_thirunal, prince_aditya_varma).
-parent(moolam_thirunal, princess_gowri_parvathi).
-parent(aswathi_thirunal, shreekumar_varma).
-parent(aswathi_thirunal, princess_rukmini).
-% ---------- Generation 5 ----------
-parent(princess_lakshmi_bayi, princess_saraswati_lakshmi).
-parent(princess_lakshmi_bayi, prince_jayanta_thirunal_iii).
-parent(princess_lakshmi_bayi, prince_narayana_varma_iii).
-parent(princess_rukmini, princess_maya_lakshmi).
-parent(shreekumar_varma, princess_gowri_parvathi).
-% ========================
-% FACTS: gender
-% ========================
+
 gender(attingal_elaya_thampuran, female).
 gender(sethu_lakshmi_bayi, female).
 gender(sethu_parvathi_bayi, female).
 gender(other_sister_1, female).
+
+% ---------- Generation 2 ----------
+parent(sethu_parvathi_bayi, chithira_thirunal).
+parent(sethu_parvathi_bayi, uthradom_thirunal).
+parent(sethu_parvathi_bayi, karthika_thirunal).
+
 gender(chithira_thirunal, male).
 gender(uthradom_thirunal, male).
 gender(karthika_thirunal, female).
+
+% ---------- Generation 3 ----------
+parent(karthika_thirunal, pooyam_thirunal).
+parent(karthika_thirunal, aswathi_thirunal).
+
+parent(pooyam_thirunal, moolam_thirunal).
+parent(pooyam_thirunal, revathi_thirunal).
+
 gender(pooyam_thirunal, female).
 gender(aswathi_thirunal, female).
 gender(moolam_thirunal, male).
 gender(revathi_thirunal, male).
+
+% ---------- Generation 4 ----------
+parent(moolam_thirunal, prince_kerala_varma).
+parent(moolam_thirunal, princess_lakshmi_bayi).
+
+parent(aswathi_thirunal, shreekumar_varma).
+parent(aswathi_thirunal, princess_rukmini).
+
 gender(prince_kerala_varma, male).
 gender(princess_lakshmi_bayi, female).
-gender(princess_gowri_parvathi, female).
-gender(prince_aditya_varma, male).
 gender(shreekumar_varma, male).
 gender(princess_rukmini, female).
-gender(princess_saraswati_lakshmi, female).
-gender(prince_jayanta_thirunal_iii, male).
-gender(prince_narayana_varma_iii, male).
+
+% ---------- Generation 5 ----------
+parent(princess_lakshmi_bayi, princess_arya_varma).
+parent(princess_lakshmi_bayi, prince_aditya_varma).
+
+parent(princess_rukmini, princess_maya_lakshmi).
+parent(shreekumar_varma, princess_gowri_parvathi).
+
+gender(princess_arya_varma, female).
+gender(prince_aditya_varma, male).
 gender(princess_maya_lakshmi, female).
 gender(princess_gowri_parvathi, female).
+
+% ---------- Generation 6 ----------
+parent(princess_arya_varma, princess_lakshmi_devi).
+parent(princess_arya_varma, prince_rama_varma_iii).
+
+parent(princess_maya_lakshmi, princess_kamala_devi).
+parent(princess_maya_lakshmi, prince_balarama_thirunal_ii).
+
+parent(princess_gowri_parvathi, princess_rukmini_thirunal).
+parent(princess_gowri_parvathi, prince_vikrama_varma).
+
+gender(princess_lakshmi_devi, female).
+gender(prince_rama_varma_iii, male).
+gender(princess_kamala_devi, female).
+gender(prince_balarama_thirunal_ii, male).
+gender(princess_rukmini_thirunal, female).
+gender(prince_vikrama_varma, male).
+
+% ---------- Generation 7 ----------
+parent(princess_lakshmi_devi, princess_saraswati_lakshmi).
+parent(princess_lakshmi_devi, prince_jayanta_thirunal_iii).
+
+parent(princess_kamala_devi, princess_parvathi_devi).
+parent(princess_kamala_devi, prince_narayana_varma_iii).
+
+gender(princess_saraswati_lakshmi, female).
+gender(prince_jayanta_thirunal_iii, male).
+gender(princess_parvathi_devi, female).
+gender(prince_narayana_varma_iii, male).
+
+
+% =====================================================
+% RELATIONSHIPS
+% =====================================================
+
+% Mother
 mother(Mother, Child) :-
- parent(Mother, Child),
- gender(Mother, female).
+    parent(Mother, Child),
+    gender(Mother, female).
+
+% Father
 father(Father, Child) :-
- parent(Father, Child),
- gender(Father, male).
+    parent(Father, Child),
+    gender(Father, male).
+
+% Siblings
 sibling(X, Y) :-
- parent(P, X),
- parent(P, Y),
- X \= Y.
+    parent(P, X),
+    parent(P, Y),
+    X \= Y.
+
+% Brother
 brother(Brother, Person) :-
- sibling(Brother, Person),
- gender(Brother, male).
+    sibling(Brother, Person),
+    gender(Brother, male).
+
+% Sister
 sister(Sister, Person) :-
- sibling(Sister, Person),
- gender(Sister, female).
+    sibling(Sister, Person),
+    gender(Sister, female).
+
+% Grandparent
 grandparent(GP, GC) :-
- parent(GP, P),
- parent(P, GC).
+    parent(GP, P),
+    parent(P, GC).
+
+% Grandmother
 grandmother(GM, GC) :-
- grandparent(GM, GC)
-gender(GM, female).
+    grandparent(GM, GC),
+    gender(GM, female).
+
+% Grandfather
 grandfather(GF, GC) :-
- grandparent(GF, GC),
- gender(GF, male).
+    grandparent(GF, GC),
+    gender(GF, male).
+
+% Aunt
 aunt(Aunt, Person) :-
- parent(P, Person),
- sister(Aunt, P).
+    parent(P, Person),
+    sister(Aunt, P).
+
+% Uncle
 uncle(Uncle, Person) :-
- parent(P, Person),
- brother(Uncle, P).
+    parent(P, Person),
+    brother(Uncle, P).
+
+% Nephew
 nephew(Nephew, Person) :-
- sibling(Parent, Person),
- parent(Parent, Nephew),
- gender(Nephew, male).
+    sibling(Parent, Person),
+    parent(Parent, Nephew),
+    gender(Nephew, male).
+
+% Niece
 niece(Niece, Person) :-
- sibling(Parent, Person),
-parent(Parent, Niece),
- gender(Niece, female).
+    sibling(Parent, Person),
+    parent(Parent, Niece),
+    gender(Niece, female).
+
+% Cousin
 cousin(X, Y) :-
- parent(P1, X),
- parent(P2, Y),
- sibling(P1, P2),
- X \= Y.
+    parent(P1, X),
+    parent(P2, Y),
+    sibling(P1, P2),
+    X \= Y.
+
+% Ancestor
 ancestor(A, D) :- parent(A, D).
 ancestor(A, D) :-
- parent(A, X),
- ancestor(X, D).
+    parent(A, X),
+    ancestor(X, D).
+
+% Descendant
 descendant(D, A) :- ancestor(A, D).
+
+% Generation
 generation(attingal_elaya_thampuran, 0).
+
 generation(Person, N) :-
- parent(P, Person),
- generation(P, N1),
- N is N1 + 1.
+    parent(P, Person),
+    generation(P, N1),
+    N is N1 + 1.
+[23bcs098@mepcolinux ex6]$cat 4
+฀Warning:    Earlier definition at c:/users/administrator/desktop/tree.pl:14
+Warning:    Current predicate: parent/2
+Warning:    Use :- discontiguous gender/2. to suppress this message
+% c:/Users/Administrator/Desktop/tree.pl compiled 0.00 sec, 75 clauses
+?- mother(attingal_elaya_thampuran, sethu_parvathi_bayi).
+true.
+
+?- father(moolam_thirunal, prince_kerala_varma).
+true.
+
+?- sibling(chithira_thirunal, uthradom_thirunal).
+true.
+
+?- sibling(sethu_lakshmi_bayi, sethu_parvathi_bayi).
+true.
+
+?- sister(karthika_thirunal, chithira_thirunal).
+true.
+
+?- grandmother(sethu_parvathi_bayi, pooyam_thirunal).
+true.
+
+?- grandfather(moolam_thirunal, princess_arya_varma).
+true.
+
+?- uncle(uthradom_thirunal, karthika_thirunal).
+false.
+
+?- cousin(moolam_thirunal, shreekumar_varma).
+true.
+
+?- ancestor(attingal_elaya_thampuran, princess_saraswati_lakshmi).
+true .
+
+?- descendant(prince_rama_varma_iii, sethu_parvathi_bayi).
+true .
+
+?- generation(attingal_elaya_thampuran, 0).
+true .
+
+?- generation(chithira_thirunal, 4).
+false.
