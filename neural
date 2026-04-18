@@ -1,0 +1,39 @@
+n = int(input("Enter number of inputs: "))
+# Input training data
+data = []
+print("Enter inputs (x1 x2 ... target):")
+for _ in range(2**n):
+ row = list(map(int, input().split()))
+ data.append(row)
+# Parameters
+epochs = int(input("Epochs: "))
+alpha = float(input("Learning rate: "))
+bias = float(input("Bias: "))
+weights = [float(input(f"w{i+1}: ")) for i in range(n)]
+theta = float(input("Theta: "))
+# Activation function
+def activate(yin):
+ if yin > theta:
+ return 1
+ elif yin < theta:
+ return -1
+ return 0
+# Training
+for e in range(epochs):
+ print("\nEpoch", e+1)
+ for row in data:
+ x = row[:n]
+ t = row[n]
+# Calculate yin
+ yin = sum(w*xi for w, xi in zip(weights, x)) + bias
+ # Output
+ y = activate(yin)
+ print("Input:", x, "Target:", t, "Output:", y)
+ # Update weights
+ if y != t:
+ for i in range(n):
+ weights[i] += alpha * x[i] * t
+ bias += alpha * t
+# Final weights
+print("\nFinal Weights:", weights)
+print("Final Bias:", bias)
